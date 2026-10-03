@@ -44,18 +44,18 @@
         <div class="flex items-center gap-2">
             <!-- Nút Nhập URL / Dán văn bản -->
             <button onclick="openUrlModal()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded flex items-center gap-1 font-medium transition">
-                <span class="material-icons-outlined text-sm">link</span> Nhúng Link / Dán Truyện
+                <span class="material-icons-outlined text-sm">link</span> 
             </button>
 
             <!-- Tải File -->
             <label class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded cursor-pointer flex items-center gap-1 font-medium transition">
-                <span class="material-icons-outlined text-sm">upload_file</span> Tải File (TXT, DOCX, PDF, HTML)
+                <span class="material-icons-outlined text-sm">upload_file</span> Tải File
                 <input type="file" id="fileInput" accept=".txt,.docx,.doc,.pdf,.html,.htm" class="hidden" onchange="handleFileUpload(event)">
             </label>
 
             <!-- Phím Khẩn Cấp -->
             <button onclick="triggerBossKey()" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded font-bold text-white flex items-center gap-1 transition" title="Phím tắt: ESC">
-                🚨 KHẨN CẤP (ESC)
+                🚨 KHẨN CẤP
             </button>
         </div>
     </header>
@@ -246,7 +246,7 @@
         <div class="bg-white rounded-lg p-5 w-full max-w-xl shadow-2xl flex flex-col gap-4">
             <div class="flex justify-between items-center border-b pb-2">
                 <h3 class="font-bold text-base text-gray-800 flex items-center gap-1">
-                    <span class="material-icons-outlined text-blue-600">link</span> Nạp Nội Dung Đọc Truyện
+                    <span class="material-icons-outlined text-blue-600">link</span> Nạp Truyện
                 </h3>
                 <button onclick="closeUrlModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
             </div>
@@ -254,13 +254,13 @@
             <!-- Tab chọn: Nhập Link hoặc Dán Nhanh -->
             <div class="flex border-b text-xs font-medium">
                 <button id="tabUrlBtn" onclick="switchModalTab('url')" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold">1. Nhập Link Online</button>
-                <button id="tabPasteBtn" onclick="switchModalTab('paste')" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">2. Dán Nhanh Văn Bản (Khi bị chặn Cloudflare)</button>
+                <button id="tabPasteBtn" onclick="switchModalTab('paste')" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">2. Dán Nhanh Văn Bản</button>
             </div>
 
             <!-- Tab 1: Nhập Link -->
             <div id="tabUrlContent" class="flex flex-col gap-2">
                 <p class="text-xs text-gray-500">
-                    Dán liên kết chương truyện (Hệ thống sẽ thử qua 3 Proxy khác nhau để vượt rào cản):
+                    Dán liên kết chương truyện:
                 </p>
                 <input type="text" id="storyUrlInput" placeholder="https://apptruyenchu.pro/truyen/.../chuong-1" class="w-full border rounded px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <div id="urlStatus" class="text-xs text-blue-600 font-medium hidden flex items-center gap-2">
@@ -270,9 +270,6 @@
 
             <!-- Tab 2: Dán Nhanh -->
             <div id="tabPasteContent" class="flex flex-col gap-2 hidden">
-                <p class="text-xs text-gray-500">
-                    Nếu trang truyện bật Cloudflare chặn Proxy, hãy mở trang truyện -> bấm <b>Ctrl + A</b> -> <b>Ctrl + C</b> rồi dán toàn bộ vào đây:
-                </p>
                 <textarea id="pasteTextInput" rows="6" placeholder="Dán văn bản chương truyện vào đây..." class="w-full border rounded p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-sans"></textarea>
             </div>
 
@@ -285,15 +282,10 @@
 
     <script>
         // Sample dates for subtle Gmail layout timestamp simulation
-        const DATES = ["23:18", "23:10", "22:45", "2 thg 10", "1 thg 10", "29 thg 9"];
+        const DATES = [];
 
         let storyLines = [
-            "Chương 1: Khởi đầu mới tại học viện.",
-            "Ánh nắng ban mai xuyên qua từng kẽ lá, chiếu rọi xuống con đường dẫn vào đại sảnh.",
-            "Cậu thanh niên từ từ mở mắt, hít một hơi thật sâu để cảm nhận không khí trong lành.",
-            "Hôm nay là ngày đầu tiên nhập học, mọi thứ xung quanh đều xa lạ nhưng cũng đầy hứa hẹn.",
-            "Trong lòng cậu tràn ngập những câu hỏi về tương lai và những thử thách đang chờ đợi phía trước.",
-            "Bước chân nhẹ nhàng tiến về phía trước, cậu chuẩn bị bước vào một hành trình không thể nào quên."
+
         ];
 
         let activeTab = 'url';
@@ -521,16 +513,12 @@
         renderContent();
 function openUrlModal() { document.getElementById('urlModal').classList.remove('hidden'); }
         function closeUrlModal() { document.getElementById('urlModal').classList.add('hidden'); }
-
-        // =========================================================
-        // ĐẶT ĐOẠN CODE VÀO ĐÂY (Thay thế cho dòng renderContent() cũ)
-        // =========================================================
         const savedData = localStorage.getItem('BOSS_READER_DATA');
         if (savedData) {
-            processRawText(savedData); // Nạp nội dung truyện cào từ Tampermonkey
-            localStorage.removeItem('BOSS_READER_DATA'); // Tự động dọn dẹp bộ nhớ tạm
+            processRawText(savedData); 
+            localStorage.removeItem('BOSS_READER_DATA'); 
         } else {
-            renderContent(); // Nếu không có dữ liệu Tampermonkey thì hiện truyện mặc định
+            renderContent(); 
         }
     </script>
 </body>
