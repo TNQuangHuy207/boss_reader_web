@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hộp thư đến - Work & Mail Portal</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Material Icons CDN -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+    <!-- Mammoth.js (Đọc file .docx) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+    <!-- PDF.js (Đọc file .pdf) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
+        .gmail-bg { background: linear-gradient(135deg, #e8f0fe 0%, #f1f5f9 100%); }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans select-none overflow-hidden h-screen flex flex-col">
+
+    <!-- TOP CONTROL / SETTINGS BAR -->
+    <header class="bg-slate-900 text-white px-4 py-2 flex flex-wrap items-center justify-between gap-2 text-xs shadow-md z-50">
+        <div class="flex items-center gap-3">
+            <span class="font-bold text-amber-400 flex items-center gap-1">
+                <span class="material-icons-outlined text-sm">visibility_off</span> BOSS READER v3.5
+            </span>
+            <div class="h-4 w-[1px] bg-slate-700"></div>
+            <!-- Chuyển đổi Layout -->
+            <label class="text-gray-300 font-medium">Chế độ hiển thị:</label>
+            <select id="layoutSelect" class="bg-slate-800 text-white px-2 py-1 rounded border border-slate-700 focus:outline-none focus:border-blue-500 cursor-pointer">
+                <option value="gmail" selected>✉️ Gmail</option>
+                <option value="excel">📊 Excel Mode</option>
+                <option value="report">📄 Báo cáo Doanh Nghiệp</option>
+                <option value="vscode">💻 VS Code</option>
+            </select>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <!-- Nút Nhập URL / Dán văn bản -->
+            <button onclick="openUrlModal()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded flex items-center gap-1 font-medium transition">
+                <span class="material-icons-outlined text-sm">link</span> Nhúng Link / Dán Truyện
+            </button>
+
+            <!-- Tải File -->
+            <label class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1 rounded cursor-pointer flex items-center gap-1 font-medium transition">
+                <span class="material-icons-outlined text-sm">upload_file</span> Tải File (TXT, DOCX, PDF, HTML)
+                <input type="file" id="fileInput" accept=".txt,.docx,.doc,.pdf,.html,.htm" class="hidden" onchange="handleFileUpload(event)">
+            </label>
+
+            <!-- Phím Khẩn Cấp -->
+            <button onclick="triggerBossKey()" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded font-bold text-white flex items-center gap-1 transition" title="Phím tắt: ESC">
+                🚨 KHẨN CẤP (ESC)
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTAINER CHÍNH -->
+    <main id="appContainer" class="flex-1 relative overflow-hidden flex flex-col">
+        
+        <!-- 1. GMAIL LAYOUT -->
+        <div id="gmailView" class="h-full flex flex-col gmail-bg">
+            <!-- Header Gmail -->
+            <div class="h-14 border-b border-gray-200/80 px-4 flex items-center justify-between bg-white/80 backdrop-blur">
+                <div class="flex items-center gap-4 w-1/4">
+                    <span class="material-icons-outlined text-gray-600 cursor-pointer">menu</span>
+                    <div class="flex items-center gap-2">
+                        <svg class="w-6 h-6" viewBox="0 0 24 24"><path fill="#EA4335" d="M20 18h-2V9.25L12 13 4 9.25V18H2V6c0-.55.45-1 1-1h.5L12 9l8.5-4h.5c.55 0 1 .45 1 1v12z"/></svg>
+                        <span class="text-lg font-medium text-gray-700">Gmail</span>
+                    </div>
+                </div>
+                <div class="flex-1 max-w-2xl">
+                    <div class="bg-gray-100 rounded-full px-4 py-2 flex items-center gap-3 border border-transparent focus-within:border-blue-400 focus-within:bg-white transition">
+                        <span class="material-icons-outlined text-gray-500">search</span>
+                        <input type="text" placeholder="Tìm kiếm trong thư..." class="bg-transparent w-full focus:outline-none text-sm text-gray-700">
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 w-1/4 justify-end text-gray-600">
+                    <span class="material-icons-outlined cursor-pointer">help_outline</span>
+                    <span class="material-icons-outlined cursor-pointer">settings</span>
+                    <span class="material-icons-outlined cursor-pointer">apps</span>
+                    <div class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">H</div>
+                </div>
+            </div>
+
+            <div class="flex-1 flex overflow-hidden">
+                <!-- Taskbar Trái hẹp -->
+                <div class="w-16 bg-white/60 border-r border-gray-200/60 flex flex-col items-center py-3 gap-6 text-gray-600 text-xs">
+                    <div class="flex flex-col items-center gap-1 text-blue-700 font-semibold cursor-pointer relative">
+                        <div class="bg-blue-100 p-2 rounded-2xl relative">
+                            <span class="material-icons-outlined">mail</span>
+                            <span class="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] px-1 rounded-full font-bold">99+</span>
+                        </div>
+                        <span>Mail</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1 cursor-pointer hover:text-gray-900">
+                        <span class="material-icons-outlined p-2">chat</span>
+                        <span>Chat</span>
+                    </div>
+                    <div class="flex flex-col items-center gap-1 cursor-pointer hover:text-gray-900">
+                        <span class="material-icons-outlined p-2">videocam</span>
+                        <span>Meet</span>
+                    </div>
+                </div>
+
+                <!-- Sidebar Thư Mục -->
+                <div class="w-56 p-3 flex flex-col gap-2 bg-white/40 border-r border-gray-200/60 text-sm text-gray-700">
+                    <button class="flex items-center gap-3 bg-sky-100 hover:shadow-md px-5 py-3 rounded-2xl w-fit font-medium text-gray-800 transition mb-2">
+                        <span class="material-icons-outlined text-gray-700">edit</span> Soạn thư
+                    </button>
+
+                    <div class="flex items-center justify-between px-3 py-1.5 bg-blue-200/60 font-bold text-blue-900 rounded-r-full cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <span class="material-icons-outlined text-sm">inbox</span> Hộp thư đến
+                        </div>
+                        <span class="text-xs text-blue-900" id="totalCount">0</span>
+                    </div>
+                    <div class="flex items-center gap-3 px-3 py-1.5 hover:bg-gray-200/50 rounded-r-full cursor-pointer">
+                        <span class="material-icons-outlined text-sm text-gray-500">star_border</span> Có gắn dấu sao
+                    </div>
+                    <div class="flex items-center gap-3 px-3 py-1.5 hover:bg-gray-200/50 rounded-r-full cursor-pointer">
+                        <span class="material-icons-outlined text-sm text-gray-500">access_time</span> Đã tạm ẩn
+                    </div>
+                    <div class="flex items-center gap-3 px-3 py-1.5 hover:bg-gray-200/50 rounded-r-full cursor-pointer">
+                        <span class="material-icons-outlined text-sm text-gray-500">send</span> Đã gửi
+                    </div>
+                    <div class="flex items-center justify-between px-3 py-1.5 hover:bg-gray-200/50 rounded-r-full cursor-pointer">
+                        <div class="flex items-center gap-3">
+                            <span class="material-icons-outlined text-sm text-gray-500">shopping_bag</span> Giao dịch mua
+                        </div>
+                        <span class="text-xs text-gray-500">3</span>
+                    </div>
+                </div>
+
+                <!-- Khung Danh Sách Thư -->
+                <div class="flex-1 flex flex-col bg-white overflow-hidden shadow-inner">
+                    <!-- Action Toolbar -->
+                    <div class="h-10 border-b border-gray-200 px-4 flex items-center justify-between text-gray-500 text-xs">
+                        <div class="flex items-center gap-4">
+                            <span class="material-icons-outlined text-sm cursor-pointer">check_box_outline_blank</span>
+                            <span class="material-icons-outlined text-sm cursor-pointer" onclick="renderContent()">refresh</span>
+                            <span class="material-icons-outlined text-sm cursor-pointer">more_vert</span>
+                        </div>
+                        <span id="pagePagination">1–50</span>
+                    </div>
+
+                    <!-- Email Items / Lines -->
+                    <div id="gmailList" class="flex-1 overflow-y-auto custom-scrollbar divide-y divide-gray-100">
+                        <!-- Render Rows -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. EXCEL LAYOUT -->
+        <div id="excelView" class="h-full flex flex-col bg-white hidden">
+            <div class="bg-[#107c41] text-white px-4 py-1.5 flex items-center justify-between text-xs font-medium">
+                <div class="flex items-center gap-3">
+                    <span class="font-bold">Excel</span> - <span>Bao_Cao_Doanh_Thu_Q4.xlsx</span>
+                </div>
+                <span>Tài khoản Doanh Nghiệp</span>
+            </div>
+            <div class="border-b bg-gray-50 px-2 py-1 flex items-center gap-2 text-xs font-mono text-gray-600">
+                <span class="font-bold text-gray-400">fx</span>
+                <input type="text" class="flex-1 border bg-white px-2 py-0.5 rounded text-gray-800" readonly value="=SUM(DATA_ROW)">
+            </div>
+            <div class="flex-1 overflow-auto custom-scrollbar">
+                <table class="w-full border-collapse text-xs font-sans">
+                    <thead>
+                        <tr class="bg-gray-100 text-gray-600 border-b select-none">
+                            <th class="w-10 border-r p-1 text-center bg-gray-200">#</th>
+                            <th class="w-40 border-r p-1 text-left">MÃ NGUYÊN TẮC / ID</th>
+                            <th class="border-r p-1 text-left">NỘI DUNG BÁO CÁO CHI TIẾT</th>
+                            <th class="w-32 border-r p-1 text-right">TRẠNG THÁI</th>
+                        </tr>
+                    </thead>
+                    <tbody id="excelList" class="divide-y"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- 3. REPORT LAYOUT -->
+        <div id="reportView" class="h-full overflow-y-auto bg-gray-200 p-6 hidden custom-scrollbar">
+            <div class="max-w-3xl mx-auto bg-white shadow-lg p-10 min-h-full font-serif text-gray-900 leading-relaxed">
+                <div class="border-b-2 border-gray-800 pb-3 mb-6 flex justify-between items-end">
+                    <div>
+                        <h1 class="text-xl font-bold uppercase tracking-wide">BÁO CÁO TIẾN ĐỘ THỰC HIỆN DỰ ÁN Q4</h1>
+                        <p class="text-xs text-gray-500 font-sans mt-1">Phòng Nghiên Cứu & Phát Triển</p>
+                    </div>
+                    <span class="text-xs border border-gray-400 px-2 py-0.5 rounded font-sans">MẬT</span>
+                </div>
+                <div id="reportList" class="space-y-3 text-sm"></div>
+            </div>
+        </div>
+
+        <!-- 4. VS CODE LAYOUT -->
+        <div id="vscodeView" class="h-full bg-[#1e1e1e] text-[#d4d4d4] font-mono text-xs flex flex-col hidden">
+            <div class="bg-[#252526] px-3 py-1 flex items-center gap-2 text-gray-400 text-xs border-b border-[#333]">
+                <span class="text-blue-400">📄 reader_service.ts</span>
+            </div>
+            <div id="vscodeList" class="flex-1 overflow-y-auto p-4 custom-scrollbar leading-6"></div>
+        </div>
+
+        <!-- BOSS KEY EMERGENCY COVER -->
+        <div id="bossCover" class="absolute inset-0 bg-white z-50 hidden flex flex-col font-sans text-xs">
+            <div class="bg-[#107c41] text-white p-2 font-bold">Microsoft Excel - Financial_Analysis_2026.xlsx</div>
+            <div class="p-4 grid grid-cols-4 gap-4 bg-gray-50 border-b">
+                <div class="p-2 border bg-white rounded shadow-sm">
+                    <p class="text-gray-500">Doanh thu quý 3</p>
+                    <p class="text-lg font-bold text-green-600">$1,245,800</p>
+                </div>
+                <div class="p-2 border bg-white rounded shadow-sm">
+                    <p class="text-gray-500">Chi phí vận hành</p>
+                    <p class="text-lg font-bold text-red-500">$412,000</p>
+                </div>
+                <div class="p-2 border bg-white rounded shadow-sm">
+                    <p class="text-gray-500">Lợi nhuận gộp</p>
+                    <p class="text-lg font-bold text-blue-600">$833,800</p>
+                </div>
+                <div class="p-2 border bg-white rounded shadow-sm">
+                    <p class="text-gray-500">Tăng trưởng YOY</p>
+                    <p class="text-lg font-bold text-emerald-500">+14.2%</p>
+                </div>
+            </div>
+            <div class="p-4 flex-1">
+                <table class="w-full border text-left">
+                    <thead class="bg-gray-100 border-b">
+                        <tr><th class="p-2">Hạng mục</th><th class="p-2">Kế hoạch</th><th class="p-2">Thực tế</th><th class="p-2">Chênh lệch</th></tr>
+                    </thead>
+                    <tbody>
+                        <tr class="border-b"><td class="p-2">Lương nhân sự</td><td class="p-2">$150,000</td><td class="p-2">$148,500</td><td class="p-2 text-green-600">-$1,500</td></tr>
+                        <tr class="border-b"><td class="p-2">Hạ tầng Cloud / Server</td><td class="p-2">$85,000</td><td class="p-2">$89,200</td><td class="p-2 text-red-600">+$4,200</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL NHÚNG LINK HOẶC DÁN VĂN BẢN -->
+    <div id="urlModal" class="fixed inset-0 bg-black/60 z-50 flex items-center justify-center hidden">
+        <div class="bg-white rounded-lg p-5 w-full max-w-xl shadow-2xl flex flex-col gap-4">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-base text-gray-800 flex items-center gap-1">
+                    <span class="material-icons-outlined text-blue-600">link</span> Nạp Nội Dung Đọc Truyện
+                </h3>
+                <button onclick="closeUrlModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+            </div>
+
+            <!-- Tab chọn: Nhập Link hoặc Dán Nhanh -->
+            <div class="flex border-b text-xs font-medium">
+                <button id="tabUrlBtn" onclick="switchModalTab('url')" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold">1. Nhập Link Online</button>
+                <button id="tabPasteBtn" onclick="switchModalTab('paste')" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">2. Dán Nhanh Văn Bản (Khi bị chặn Cloudflare)</button>
+            </div>
+
+            <!-- Tab 1: Nhập Link -->
+            <div id="tabUrlContent" class="flex flex-col gap-2">
+                <p class="text-xs text-gray-500">
+                    Dán liên kết chương truyện (Hệ thống sẽ thử qua 3 Proxy khác nhau để vượt rào cản):
+                </p>
+                <input type="text" id="storyUrlInput" placeholder="https://apptruyenchu.pro/truyen/.../chuong-1" class="w-full border rounded px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
+                <div id="urlStatus" class="text-xs text-blue-600 font-medium hidden flex items-center gap-2">
+                    <span class="animate-spin material-icons-outlined text-sm">autorenew</span> <span id="statusMsg">Đang tải và kết nối...</span>
+                </div>
+            </div>
+
+            <!-- Tab 2: Dán Nhanh -->
+            <div id="tabPasteContent" class="flex flex-col gap-2 hidden">
+                <p class="text-xs text-gray-500">
+                    Nếu trang truyện bật Cloudflare chặn Proxy, hãy mở trang truyện -> bấm <b>Ctrl + A</b> -> <b>Ctrl + C</b> rồi dán toàn bộ vào đây:
+                </p>
+                <textarea id="pasteTextInput" rows="6" placeholder="Dán văn bản chương truyện vào đây..." class="w-full border rounded p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-sans"></textarea>
+            </div>
+
+            <div class="flex justify-end gap-2 mt-2">
+                <button onclick="closeUrlModal()" class="px-3 py-1.5 rounded bg-gray-200 text-xs font-medium hover:bg-gray-300">Hủy</button>
+                <button id="submitBtn" onclick="handleDataSubmit()" class="px-4 py-1.5 rounded bg-blue-600 text-white text-xs font-medium hover:bg-blue-500">Nạp & Hiển Thị</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample dates for subtle Gmail layout timestamp simulation
+        const DATES = ["23:18", "23:10", "22:45", "2 thg 10", "1 thg 10", "29 thg 9"];
+
+        let storyLines = [
+            "Chương 1: Khởi đầu mới tại học viện.",
+            "Ánh nắng ban mai xuyên qua từng kẽ lá, chiếu rọi xuống con đường dẫn vào đại sảnh.",
+            "Cậu thanh niên từ từ mở mắt, hít một hơi thật sâu để cảm nhận không khí trong lành.",
+            "Hôm nay là ngày đầu tiên nhập học, mọi thứ xung quanh đều xa lạ nhưng cũng đầy hứa hẹn.",
+            "Trong lòng cậu tràn ngập những câu hỏi về tương lai và những thử thách đang chờ đợi phía trước.",
+            "Bước chân nhẹ nhàng tiến về phía trước, cậu chuẩn bị bước vào một hành trình không thể nào quên."
+        ];
+
+        let activeTab = 'url';
+
+        document.getElementById('layoutSelect').addEventListener('change', (e) => {
+            const layout = e.target.value;
+            ['gmail', 'excel', 'report', 'vscode'].forEach(l => document.getElementById(`${l}View`).classList.add('hidden'));
+            document.getElementById(`${layout}View`).classList.remove('hidden');
+            renderContent();
+        });
+
+        function triggerBossKey() {
+            document.getElementById('bossCover').classList.toggle('hidden');
+        }
+
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') triggerBossKey();
+        });
+
+        function renderContent() {
+            const layout = document.getElementById('layoutSelect').value;
+            
+            if (layout === 'gmail') {
+                const listEl = document.getElementById('gmailList');
+                listEl.innerHTML = '';
+                storyLines.forEach((line, idx) => {
+                    if(!line.trim()) return;
+                    const date = DATES[idx % DATES.length];
+                    const row = document.createElement('div');
+                    row.className = "flex items-center gap-3 px-4 py-2 hover:bg-gray-50 border-b border-gray-100 cursor-pointer text-xs group transition";
+                    
+                    // Gmail row output - NO SENDER COLUMN, NO BOLD TITLE PREFIX
+                    row.innerHTML = `
+                        <div class="flex items-center gap-2 text-gray-400 flex-shrink-0">
+                            <span class="material-icons-outlined text-sm hover:text-gray-600 select-none">check_box_outline_blank</span>
+                            <span class="material-icons-outlined text-sm hover:text-amber-400 select-none">star_border</span>
+                        </div>
+                        <div class="flex-1 truncate text-gray-800 leading-snug">
+                            ${escapeHtml(line)}
+                        </div>
+                        <div class="text-gray-400 text-right w-12 text-[11px] font-medium group-hover:hidden flex-shrink-0">${date}</div>
+                        <div class="hidden group-hover:flex items-center gap-1 text-gray-500 flex-shrink-0">
+                            <span class="material-icons-outlined text-sm p-1 hover:bg-gray-200 rounded">archive</span>
+                            <span class="material-icons-outlined text-sm p-1 hover:bg-gray-200 rounded">delete</span>
+                            <span class="material-icons-outlined text-sm p-1 hover:bg-gray-200 rounded">mail</span>
+                        </div>
+                    `;
+                    listEl.appendChild(row);
+                });
+                document.getElementById('totalCount').innerText = storyLines.length;
+            } 
+            else if (layout === 'excel') {
+                const listEl = document.getElementById('excelList');
+                listEl.innerHTML = '';
+                storyLines.forEach((line, idx) => {
+                    if(!line.trim()) return;
+                    const tr = document.createElement('tr');
+                    tr.className = "hover:bg-blue-50/50";
+                    tr.innerHTML = `
+                        <td class="border-r p-1.5 text-center bg-gray-50 font-mono text-gray-400">${idx + 1}</td>
+                        <td class="border-r p-1.5 font-mono text-blue-700">TASK_00${idx + 1}</td>
+                        <td class="border-r p-1.5 text-gray-800">${escapeHtml(line)}</td>
+                        <td class="border-r p-1.5 text-right font-medium text-emerald-600">COMPLETED</td>
+                    `;
+                    listEl.appendChild(tr);
+                });
+            }
+            else if (layout === 'report') {
+                const listEl = document.getElementById('reportList');
+                listEl.innerHTML = '';
+                storyLines.forEach((line) => {
+                    if(!line.trim()) return;
+                    const p = document.createElement('p');
+                    p.className = "text-justify leading-relaxed indent-6";
+                    p.innerText = line;
+                    listEl.appendChild(p);
+                });
+            }
+            else if (layout === 'vscode') {
+                const listEl = document.getElementById('vscodeList');
+                listEl.innerHTML = '';
+                storyLines.forEach((line, idx) => {
+                    if(!line.trim()) return;
+                    const div = document.createElement('div');
+                    div.className = "flex gap-4 hover:bg-[#2a2d2e] px-2 rounded";
+                    div.innerHTML = `
+                        <span class="text-gray-600 select-none w-6 text-right">${idx + 1}</span>
+                        <span class="text-[#6A9955]">// ${escapeHtml(line)}</span>
+                    `;
+                    listEl.appendChild(div);
+                });
+            }
+        }
+
+        const PROXIES = [
+            url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+            url => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+            url => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+        ];
+
+        async function fetchStoryFromUrl() {
+            const targetUrl = document.getElementById('storyUrlInput').value.trim();
+            if (!targetUrl) return alert("Vui lòng nhập đường dẫn!");
+
+            const statusEl = document.getElementById('urlStatus');
+            const msgEl = document.getElementById('statusMsg');
+            statusEl.classList.remove('hidden');
+
+            let htmlContent = null;
+
+            for (let i = 0; i < PROXIES.length; i++) {
+                try {
+                    msgEl.innerText = `Đang thử kết nối qua Proxy ${i + 1}/${PROXIES.length}...`;
+                    const proxyUrl = PROXIES[i](targetUrl);
+                    const res = await fetch(proxyUrl);
+                    
+                    if (res.ok) {
+                        if (i === 0) {
+                            const data = await res.json();
+                            htmlContent = data.contents;
+                        } else {
+                            htmlContent = await res.text();
+                        }
+                        if (htmlContent && htmlContent.length > 200) break;
+                    }
+                } catch (e) {
+                    console.warn(`Proxy ${i + 1} thất bại:`, e);
+                }
+            }
+
+            if (htmlContent) {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(htmlContent, 'text/html');
+
+                const selectors = [
+                    '#chapter-c', '.chapter-c', '#content', '.chapter-content',
+                    '.box-chap', '#txt-content', '.reading-content', '.content-doc',
+                    '#chuong-noi-dung', 'article'
+                ];
+
+                let extractedText = "";
+                for (let selector of selectors) {
+                    const el = doc.querySelector(selector);
+                    if (el && el.innerText.trim().length > 100) {
+                        extractedText = el.innerText;
+                        break;
+                    }
+                }
+
+                if (!extractedText) extractedText = doc.body.innerText;
+
+                processRawText(extractedText);
+                statusEl.classList.add('hidden');
+                closeUrlModal();
+            } else {
+                statusEl.classList.add('hidden');
+                alert("Trang web này bật Cloudflare chặn Proxy tự động.\n\nVui lòng chuyển sang Tab '2. Dán Nhanh Văn Bản', copy chữ từ web truyện dán vào để đọc mượt mà không bị lỗi!");
+                switchModalTab('paste');
+            }
+        }
+
+        function handleDataSubmit() {
+            if (activeTab === 'url') {
+                fetchStoryFromUrl();
+            } else {
+                const text = document.getElementById('pasteTextInput').value;
+                if (!text.trim()) return alert("Vui lòng dán nội dung văn bản!");
+                processRawText(text);
+                closeUrlModal();
+            }
+        }
+
+        function switchModalTab(tab) {
+            activeTab = tab;
+            if (tab === 'url') {
+                document.getElementById('tabUrlBtn').className = "px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold";
+                document.getElementById('tabPasteBtn').className = "px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700";
+                document.getElementById('tabUrlContent').classList.remove('hidden');
+                document.getElementById('tabPasteContent').classList.add('hidden');
+            } else {
+                document.getElementById('tabPasteBtn').className = "px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold";
+                document.getElementById('tabUrlBtn').className = "px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700";
+                document.getElementById('tabPasteContent').classList.remove('hidden');
+                document.getElementById('tabUrlContent').classList.add('hidden');
+            }
+        }
+
+        async function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const ext = file.name.split('.').pop().toLowerCase();
+
+            if (ext === 'txt') {
+                processRawText(await file.text());
+            } else if (ext === 'html' || ext === 'htm') {
+                const doc = new DOMParser().parseFromString(await file.text(), 'text/html');
+                processRawText(doc.body.innerText);
+            } else if (ext === 'docx' || ext === 'doc') {
+                mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() })
+                    .then(r => processRawText(r.value));
+            } else if (ext === 'pdf') {
+                const pdf = await pdfjsLib.getDocument({ data: await file.arrayBuffer() }).promise;
+                let text = "";
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const tokens = await page.getTextContent();
+                    text += tokens.items.map(t => t.str).join(" ") + "\n";
+                }
+                processRawText(text);
+            }
+        }
+
+        function processRawText(text) {
+            storyLines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            renderContent();
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        }
+
+        function openUrlModal() { document.getElementById('urlModal').classList.remove('hidden'); }
+        function closeUrlModal() { document.getElementById('urlModal').classList.add('hidden'); }
+
+        renderContent();
+function openUrlModal() { document.getElementById('urlModal').classList.remove('hidden'); }
+        function closeUrlModal() { document.getElementById('urlModal').classList.add('hidden'); }
+
+        // =========================================================
+        // ĐẶT ĐOẠN CODE VÀO ĐÂY (Thay thế cho dòng renderContent() cũ)
+        // =========================================================
+        const savedData = localStorage.getItem('BOSS_READER_DATA');
+        if (savedData) {
+            processRawText(savedData); // Nạp nội dung truyện cào từ Tampermonkey
+            localStorage.removeItem('BOSS_READER_DATA'); // Tự động dọn dẹp bộ nhớ tạm
+        } else {
+            renderContent(); // Nếu không có dữ liệu Tampermonkey thì hiện truyện mặc định
+        }
+    </script>
+</body>
+</html>
