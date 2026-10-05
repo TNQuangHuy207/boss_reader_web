@@ -42,8 +42,13 @@
         </div>
 
         <div class="flex items-center gap-2">
+            <!-- Nút Bật/Tắt Ô YouTube (Phím tắt: Alt + Q) -->
+            <button onclick="toggleYoutubeWidget()" class="bg-red-600/80 hover:bg-red-600 px-3 py-1 rounded flex items-center gap-1 font-medium transition" title="Bật/Tắt khung YouTube (Alt + Q)">
+                <span class="material-icons-outlined text-sm">smart_display</span> YouTube <span class="text-[10px] opacity-75">(Alt+Q)</span>
+            </button>
+
             <!-- Nút Nhập URL / Dán văn bản -->
-            <button onclick="openUrlModal()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded flex items-center gap-1 font-medium transition">
+            <button onclick="openUrlModal()" class="bg-blue-600 hover:bg-blue-500 px-3 py-1 rounded flex items-center gap-1 font-medium transition" title="Nạp truyện">
                 <span class="material-icons-outlined text-sm">link</span> 
             </button>
 
@@ -206,6 +211,50 @@
             <div id="vscodeList" class="flex-1 overflow-y-auto p-4 custom-scrollbar leading-6"></div>
         </div>
 
+        <!-- Ô NHỎ NHÚNG VIDEO YOUTUBE (WIDGET GÓC DƯỚI BÊN TRÁI) -->
+        <div id="youtubeWidget" class="absolute bottom-4 left-4 z-40 bg-slate-900 text-white rounded-lg shadow-2xl border border-slate-700 w-80 overflow-hidden transition-all duration-300">
+            <div class="bg-slate-800 px-3 py-1.5 flex items-center justify-between border-b border-slate-700 select-none">
+                <span class="font-bold text-xs flex items-center gap-1 text-red-400">
+                    <span class="material-icons-outlined text-sm">smart_display</span> YouTube Player
+                </span>
+                <div class="flex items-center gap-1">
+                    <button onclick="minimizeYoutubeWidget()" class="text-gray-400 hover:text-white p-0.5 rounded" title="Thu nhỏ / Mở rộng">
+                        <span id="ytMinIcon" class="material-icons-outlined text-sm">remove</span>
+                    </button>
+                    <button onclick="toggleYoutubeWidget()" class="text-gray-400 hover:text-red-400 p-0.5 rounded" title="Đóng (Alt + Q)">
+                        <span class="material-icons-outlined text-sm">close</span>
+                    </button>
+                </div>
+            </div>
+
+            <div id="youtubeWidgetBody" class="p-2 space-y-2">
+                <div class="flex gap-1">
+                    <input type="text" id="ytUrlInput" placeholder="Dán link YouTube..." 
+                           class="flex-1 bg-slate-800 text-xs px-2 py-1 rounded border border-slate-700 text-white focus:outline-none focus:border-red-500">
+                    <button onclick="loadYoutubeVideo()" class="bg-red-600 hover:bg-red-500 text-white text-xs px-2.5 py-1 rounded font-medium transition">
+                        Mở
+                    </button>
+                </div>
+
+                <!-- Khung Phản hồi / Cảnh báo Local File -->
+                <div id="fileProtocolNotice" class="hidden bg-amber-900/40 border border-amber-600/50 p-2 rounded text-[11px] text-amber-200">
+                    ⚠️ Mở bằng `file://` bị YouTube chặn nhúng (Lỗi 153). 
+                    <button onclick="openExternalPopup()" class="mt-1 w-full bg-amber-600 hover:bg-amber-500 text-white font-bold py-1 px-2 rounded flex items-center justify-center gap-1">
+                        <span class="material-icons-outlined text-xs">open_in_new</span> Mở Video Khung Nhỏ (Pop-up)
+                    </button>
+                </div>
+
+                <div class="relative w-full pt-[56.25%] bg-black rounded overflow-hidden shadow-inner">
+                    <iframe id="ytIframe" class="absolute top-0 left-0 w-full h-full border-0" 
+                            src="about:blank" 
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+                            referrerpolicy="strict-origin-when-cross-origin"
+                            allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+        </div>
+
         <!-- BOSS KEY EMERGENCY COVER -->
         <div id="bossCover" class="absolute inset-0 bg-white z-50 hidden flex flex-col font-sans text-xs">
             <div class="bg-[#107c41] text-white p-2 font-bold">Microsoft Excel - Financial_Analysis_2026.xlsx</div>
@@ -251,24 +300,19 @@
                 <button onclick="closeUrlModal()" class="text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
             </div>
 
-            <!-- Tab chọn: Nhập Link hoặc Dán Nhanh -->
             <div class="flex border-b text-xs font-medium">
                 <button id="tabUrlBtn" onclick="switchModalTab('url')" class="px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold">1. Nhập Link Online</button>
                 <button id="tabPasteBtn" onclick="switchModalTab('paste')" class="px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700">2. Dán Nhanh Văn Bản</button>
             </div>
 
-            <!-- Tab 1: Nhập Link -->
             <div id="tabUrlContent" class="flex flex-col gap-2">
-                <p class="text-xs text-gray-500">
-                    Dán liên kết chương truyện:
-                </p>
+                <p class="text-xs text-gray-500">Dán liên kết chương truyện:</p>
                 <input type="text" id="storyUrlInput" placeholder="https://apptruyenchu.pro/truyen/.../chuong-1" class="w-full border rounded px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <div id="urlStatus" class="text-xs text-blue-600 font-medium hidden flex items-center gap-2">
                     <span class="animate-spin material-icons-outlined text-sm">autorenew</span> <span id="statusMsg">Đang tải và kết nối...</span>
                 </div>
             </div>
 
-            <!-- Tab 2: Dán Nhanh -->
             <div id="tabPasteContent" class="flex flex-col gap-2 hidden">
                 <textarea id="pasteTextInput" rows="6" placeholder="Dán văn bản chương truyện vào đây..." class="w-full border rounded p-2 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-sans"></textarea>
             </div>
@@ -281,14 +325,10 @@
     </div>
 
     <script>
-        // Sample dates for subtle Gmail layout timestamp simulation
         const DATES = [];
-
-        let storyLines = [
-
-        ];
-
+        let storyLines = [];
         let activeTab = 'url';
+        let currentVideoId = null;
 
         document.getElementById('layoutSelect').addEventListener('change', (e) => {
             const layout = e.target.value;
@@ -302,8 +342,59 @@
         }
 
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') triggerBossKey();
+            if (e.key === 'Escape') {
+                triggerBossKey();
+            }
+            if (e.altKey && (e.key === 'q' || e.key === 'Q')) {
+                e.preventDefault();
+                toggleYoutubeWidget();
+            }
         });
+
+        /* --- XỬ LÝ YOUTUBE BẢO MẬT --- */
+        function extractYoutubeId(url) {
+            if (!url) return null;
+            const str = url.trim();
+            const match = str.match(/(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?|shorts)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/);
+            if (match && match[1]) return match[1];
+            if (str.length === 11 && !str.includes('/') && !str.includes('.')) return str;
+            return null;
+        }
+
+        function loadYoutubeVideo() {
+            const input = document.getElementById('ytUrlInput').value;
+            const videoId = extractYoutubeId(input);
+            if (!videoId) return alert('Vui lòng nhập đường dẫn hoặc ID YouTube hợp lệ!');
+            
+            currentVideoId = videoId;
+
+            // Kiểm tra xem trang có đang mở từ file cục bộ không
+            if (window.location.protocol === 'file:') {
+                document.getElementById('fileProtocolNotice').classList.remove('hidden');
+            } else {
+                document.getElementById('fileProtocolNotice').classList.add('hidden');
+            }
+
+            document.getElementById('ytIframe').src = `https://www.youtube.com/embed/${videoId}?autoplay=1&enablejsapi=1`;
+        }
+
+        function openExternalPopup() {
+            if (currentVideoId) {
+                window.open(`https://www.youtube.com/watch?v=${currentVideoId}`, '_blank', 'width=480,height=300,left=20,top=500');
+            }
+        }
+
+        function toggleYoutubeWidget() {
+            const widget = document.getElementById('youtubeWidget');
+            widget.classList.toggle('hidden');
+        }
+
+        function minimizeYoutubeWidget() {
+            const body = document.getElementById('youtubeWidgetBody');
+            const icon = document.getElementById('ytMinIcon');
+            body.classList.toggle('hidden');
+            icon.innerText = body.classList.contains('hidden') ? 'add' : 'remove';
+        }
 
         function renderContent() {
             const layout = document.getElementById('layoutSelect').value;
@@ -317,7 +408,6 @@
                     const row = document.createElement('div');
                     row.className = "flex items-center gap-3 px-4 py-2 hover:bg-gray-50 border-b border-gray-100 cursor-pointer text-xs group transition";
                     
-                    // Gmail row output - NO SENDER COLUMN, NO BOLD TITLE PREFIX
                     row.innerHTML = `
                         <div class="flex items-center gap-2 text-gray-400 flex-shrink-0">
                             <span class="material-icons-outlined text-sm hover:text-gray-600 select-none">check_box_outline_blank</span>
@@ -326,7 +416,7 @@
                         <div class="flex-1 truncate text-gray-800 leading-snug">
                             ${escapeHtml(line)}
                         </div>
-                        <div class="text-gray-400 text-right w-12 text-[11px] font-medium group-hover:hidden flex-shrink-0">${date}</div>
+                        <div class="text-gray-400 text-right w-12 text-[11px] font-medium group-hover:hidden flex-shrink-0">${date || ''}</div>
                         <div class="hidden group-hover:flex items-center gap-1 text-gray-500 flex-shrink-0">
                             <span class="material-icons-outlined text-sm p-1 hover:bg-gray-200 rounded">archive</span>
                             <span class="material-icons-outlined text-sm p-1 hover:bg-gray-200 rounded">delete</span>
@@ -468,8 +558,8 @@
             } else {
                 document.getElementById('tabPasteBtn').className = "px-4 py-2 border-b-2 border-blue-600 text-blue-600 font-bold";
                 document.getElementById('tabUrlBtn').className = "px-4 py-2 border-b-2 border-transparent text-gray-500 hover:text-gray-700";
-                document.getElementById('tabPasteContent').classList.remove('hidden');
-                document.getElementById('tabUrlContent').classList.add('hidden');
+                document.getElementById('tabPasteContent').classList.add('hidden');
+                document.getElementById('tabUrlContent').classList.remove('hidden');
             }
         }
 
@@ -511,15 +601,6 @@
         function closeUrlModal() { document.getElementById('urlModal').classList.add('hidden'); }
 
         renderContent();
-function openUrlModal() { document.getElementById('urlModal').classList.remove('hidden'); }
-        function closeUrlModal() { document.getElementById('urlModal').classList.add('hidden'); }
-        const savedData = localStorage.getItem('BOSS_READER_DATA');
-        if (savedData) {
-            processRawText(savedData); 
-            localStorage.removeItem('BOSS_READER_DATA'); 
-        } else {
-            renderContent(); 
-        }
     </script>
 </body>
 </html>
